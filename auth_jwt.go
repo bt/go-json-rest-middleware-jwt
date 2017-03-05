@@ -125,12 +125,12 @@ type resultToken struct {
 }
 
 type login struct {
-	Username string `json:"username"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
 // LoginHandler can be used by clients to get a jwt token.
-// Payload needs to be json in the form of {"username": "USERNAME", "password": "PASSWORD"}.
+// Payload needs to be json in the form of {"email": "USER@EMAIL.COM", "password": "PASSWORD"}.
 // Reply will be of the form {"token": "TOKEN"}.
 func (mw *JWTMiddleware) LoginHandler(writer rest.ResponseWriter, request *rest.Request) {
 	loginVals := login{}
@@ -141,7 +141,7 @@ func (mw *JWTMiddleware) LoginHandler(writer rest.ResponseWriter, request *rest.
 		return
 	}
 
-	if !mw.Authenticator(loginVals.Username, loginVals.Password) {
+	if !mw.Authenticator(loginVals.Email, loginVals.Password) {
 		mw.unauthorized(writer, "Authenticator failed")
 		return
 	}
@@ -150,12 +150,12 @@ func (mw *JWTMiddleware) LoginHandler(writer rest.ResponseWriter, request *rest.
 	claims := token.Claims.(jwt.MapClaims)
 
 	if mw.PayloadFunc != nil {
-		for key, value := range mw.PayloadFunc(loginVals.Username) {
+		for key, value := range mw.PayloadFunc(loginVals.Email) {
 			claims[key] = value
 		}
 	}
 
-	claims["id"] = loginVals.Username
+	claims["id"] = loginVals.Email
 	claims["exp"] = time.Now().Add(mw.Timeout).Unix()
 	if mw.MaxRefresh != 0 {
 		claims["orig_iat"] = time.Now().Unix()
